@@ -27,6 +27,7 @@ PYBIND11_MODULE(PyDBoW2, m) {
       .def("getBranchingFactor", &OrbVocabulary::getBranchingFactor)
       .def("getDepthLevels",   &OrbVocabulary::getDepthLevels)
       .def("size", &OrbVocabulary::size)
+      .def("score", &OrbVocabulary::score)
       .def("transform", [](OrbVocabulary& orb, 
                           py::array_t<unsigned char, py::array::c_style | py::array::forcecast> py_feat, 
                           BowVector &v, FeatureVector &fv, int levelsup){
@@ -42,7 +43,7 @@ PYBIND11_MODULE(PyDBoW2, m) {
             int feat_dim = info.shape[1];
             features.reserve(num_desc);
 
-            if(info.stride[1] != 1)
+            if(info.strides[1] != 1)
               throw std::runtime_error("Second dimension must be contiguous");
 
             unsigned char *data_ptr = static_cast<unsigned char *>(info.ptr);
