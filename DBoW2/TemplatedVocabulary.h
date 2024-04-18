@@ -1145,7 +1145,7 @@ void TemplatedVocabulary<TDescriptor,F>::transform(
   if(m_weighting == TF || m_weighting == TF_IDF)
   {
     unsigned int i_feature = 0;
-    for(fit = features.begin(); fit < features.end(); ++fit, ++i_feature)
+    for(fit = features.begin(); fit != features.end(); ++fit, ++i_feature)
     {
       WordId id;
       NodeId nid;
