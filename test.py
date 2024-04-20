@@ -6,9 +6,16 @@ img = cv2.imread("/home/wen/Projects/MonoGS/datasets/tum/rgbd_dataset_freiburg1_
 img2 = cv2.imread("/home/wen/Projects/MonoGS/datasets/tum/rgbd_dataset_freiburg1_desk/rgb/1305031473.095695.png")
 mask = np.ones((img.shape[0], img.shape[1]), dtype=np.uint8)
 
+# orb = PyDBoW2.ORBextractor(1000, 1.2, 8, 20, 7)
+# kp1, des = orb.extract(img, mask)
+# kp2, des2 = orb.extract(img2, mask)
+
+# des = np.array(des)
+# des2 = np.array(des2)
+
 orb = cv2.ORB_create()
-kpts, des = orb.detectAndCompute(img, mask)
-kpts2, des2 = orb.detectAndCompute(img2, mask)
+kp1, des = orb.detectAndCompute(img, None)
+kp2, des2 = orb.detectAndCompute(img2, None)
 
 vec, fvec = PyDBoW2.BowVector(), PyDBoW2.FeatureVector()
 vec2, fvec2 = PyDBoW2.BowVector(), PyDBoW2.FeatureVector()

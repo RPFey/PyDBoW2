@@ -11,11 +11,13 @@ set(HDRS_DBOW2
   DBoW2/FORB.h 
   DBoW2/FClass.h       
   DBoW2/FeatureVector.h
-  DBoW2/ScoringObject.h   
+  DBoW2/ScoringObject.h  
+  DBoW2/ORBextractor.h   
   DBoW2/TemplatedVocabulary.h)
 set(SRCS_DBOW2
   DBoW2/BowVector.cpp
-  DBoW2/FORB.cpp      
+  DBoW2/FORB.cpp 
+  DBoW2/ORBextractor.cpp    
   DBoW2/FeatureVector.cpp
   DBoW2/ScoringObject.cpp
   ext.cpp)
@@ -34,6 +36,7 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 
 pybind11_add_module(${PROJECT_NAME} ${SRCS_DBOW2} ${SRCS_DUTILS})
 target_link_libraries(${PROJECT_NAME} PRIVATE ${OpenCV_LIBS})
+target_include_directories(${PROJECT_NAME} PRIVATE ${OpenCV_INCLUDE_DIRS})
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 11)
 
 # EXAMPLE_VERSION_INFO is defined by setup.py and passed into the C++ code as a
