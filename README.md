@@ -10,7 +10,7 @@ Clone the repo and run `python setup.py build_ext --inplace`. You can find examp
 
 1. I notice that the ORB Feature in ORB-SLAM2 is different from the OpenCV implementation.
 
-2. 
+2. Add init.py
 
 ## From ORB-SLAM2
 

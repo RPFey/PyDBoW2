@@ -20,7 +20,7 @@ PYBIND11_MAKE_OPAQUE(std::vector<unsigned int>);
 PYBIND11_MAKE_OPAQUE(std::vector<cv::KeyPoint>);
 
 // pybind11 set up python module
-PYBIND11_MODULE(PyDBoW2, m) {
+PYBIND11_MODULE(_C, m) {
   m.doc() = "DBoW2 vocabulary";
 
   py::class_<cv::Point2f>(m, "Point2f")
