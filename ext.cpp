@@ -1,8 +1,10 @@
 #include "DBoW2/TemplatedVocabulary.h"
 #include "DLoopDetector/TemplatedLoopDetector.h"
 #include "DBoW2/FORB.h"
+#include "DBoW2/FBrief.h"
 #include "DBoW2/BowVector.h"
 #include "DBoW2/FeatureVector.h"
+#include "DBoW2/BRIEFextractor.h"
 #include "DBoW2/ORBextractor.h"
 
 #include <pybind11/pybind11.h>
@@ -16,6 +18,9 @@ using namespace DLoopDetector;
 
 typedef TemplatedVocabulary<FORB::TDescriptor, FORB> OrbVocabulary;
 typedef TemplatedLoopDetector<FORB::TDescriptor, FORB> OrbLoopDetector;
+
+typedef TemplatedVocabulary<FBrief::TDescriptor, FBrief> BVocabulary;
+typedef TemplatedLoopDetector<FBrief::TDescriptor, FBrief> BLoopDetector;
 
 PYBIND11_MAKE_OPAQUE(BowVector);
 PYBIND11_MAKE_OPAQUE(FeatureVector);
@@ -194,8 +199,107 @@ PYBIND11_MODULE(_C, m) {
             }
 
             orb.transform(features, v, fv, levelsup);
-      }, py::call_guard<py::gil_scoped_release>());
+      });
 
+    py::class_<BLoopDetector::Parameters>(m, "BRIEFLoopDetectorParam")
+        .def(py::init<>())
+        .def(py::init<int, int, float, bool, float, int, GeometricalCheck, int>()) 
+        .def_readwrite("image_rows", &BLoopDetector::Parameters::image_rows)
+        .def_readwrite("image_cols", &BLoopDetector::Parameters::image_cols)
+        .def_readwrite("use_nss", &BLoopDetector::Parameters::use_nss)
+        .def_readwrite("alpha", &BLoopDetector::Parameters::alpha)
+        .def_readwrite("k", &BLoopDetector::Parameters::k)
+        .def_readwrite("geom_check", &BLoopDetector::Parameters::geom_check)
+        .def_readwrite("max_neighbor_ratio", &BLoopDetector::Parameters::max_neighbor_ratio)
+        .def_readwrite("max_distance_between_groups", &BLoopDetector::Parameters::max_distance_between_groups)
+        .def_readwrite("max_distance_between_queries", &BLoopDetector::Parameters::max_distance_between_queries);
+
+    py::class_<BriefExtractor>(m, "BRIEFextractor")
+      .def(py::init<const std::string&>())
+      .def("compute", [](BriefExtractor& extractor,
+                         py::array_t<unsigned char, py::array::c_style | py::array::forcecast> img)
+      {
+          py::buffer_info info = img.request();
+          if (info.ndim != 2)
+            throw std::runtime_error("Number of dimensions must be two");
+
+          int height = info.shape[0];
+          int width = info.shape[1];
+
+          if(info.strides[1] != 1)
+            throw std::runtime_error("Second dimension must be contiguous");
+
+          // construct cv::Mat
+          cv::Mat img_cv(height, width, CV_8U, info.ptr);
+          std::vector<cv::KeyPoint> keypoints;
+          std::vector<DVision::BRIEF::bitset> descriptors;
+
+          extractor(img_cv, keypoints, descriptors);
+          return keypoints;
+      }, py::return_value_policy::take_ownership);
+
+    py::class_<BVocabulary>(m, "BRIEFVocabulary")
+      .def(py::init<const std::string& >())
+      .def("loadFromTextFile", &BVocabulary::loadFromTextFile)
+      .def("getBranchingFactor", &BVocabulary::getBranchingFactor)
+      .def("getDepthLevels",   &BVocabulary::getDepthLevels)
+      .def("size", &BVocabulary::size)
+      .def("score", &BVocabulary::score)
+      .def("transform", [](BVocabulary& brief, 
+                           BriefExtractor& extractor,
+                          py::array_t<unsigned char, py::array::c_style | py::array::forcecast> img, 
+                          BowVector &v, FeatureVector &fv, int levelsup){
+
+            // check C contiguous of img
+            py::buffer_info info = img.request();
+            if (info.ndim != 2)
+              throw std::runtime_error("Number of dimensions must be two");
+
+            int height = info.shape[0];
+            int width = info.shape[1];
+
+            if(info.strides[1] != 1)
+              throw std::runtime_error("Second dimension must be contiguous");
+
+            // construct cv::Mat
+            cv::Mat img_cv(height, width, CV_8U, info.ptr);
+            std::vector<cv::KeyPoint> keys;
+            std::vector<DVision::BRIEF::bitset> descriptors;
+
+            extractor(img_cv, keys, descriptors);
+            brief.transform(descriptors, v, fv, levelsup);
+      });
+
+    py::class_<BLoopDetector>(m, "BRIEFLoopDetector")
+    .def(py::init<BVocabulary&, const BLoopDetector::Parameters&>())
+    .def("detectLoop", [](BLoopDetector& loop_detector, 
+                          BriefExtractor& extractor,
+                          py::array_t<unsigned char, py::array::c_style | py::array::forcecast> img)
+    {
+      // check C contiguous of img
+      py::buffer_info info = img.request();
+      if (info.ndim != 2)
+        throw std::runtime_error("Number of dimensions must be two");
+
+      int height = info.shape[0];
+      int width = info.shape[1];
+
+      if(info.strides[1] != 1)
+        throw std::runtime_error("Second dimension must be contiguous");
+
+      // construct cv::Mat
+      cv::Mat img_cv(height, width, CV_8U, info.ptr);
+      std::vector<cv::KeyPoint> keypoints;
+      std::vector<DVision::BRIEF::bitset> descriptors;
+
+      extractor(img_cv, keypoints, descriptors);
+
+      std::vector<cv::KeyPoint> old_keypoints;
+      std::vector<cv::KeyPoint> cur_keypoints;
+      DetectionResult result;
+      loop_detector.detectLoop(keypoints, descriptors, result, &old_keypoints, &cur_keypoints);
+      return py::make_tuple(result, old_keypoints, cur_keypoints);
+    }, py::return_value_policy::take_ownership);
 
     py::class_<BowVector>(m, "BowVector")
       .def(py::init<>())
@@ -248,7 +352,9 @@ PYBIND11_MODULE(_C, m) {
     .def_readwrite("alpha", &OrbLoopDetector::Parameters::alpha)
     .def_readwrite("k", &OrbLoopDetector::Parameters::k)
     .def_readwrite("geom_check", &OrbLoopDetector::Parameters::geom_check)
-    .def_readwrite("max_neighbor_ratio", &OrbLoopDetector::Parameters::max_neighbor_ratio);
+    .def_readwrite("max_neighbor_ratio", &OrbLoopDetector::Parameters::max_neighbor_ratio)
+    .def_readwrite("max_distance_between_groups", &OrbLoopDetector::Parameters::max_distance_between_groups)
+    .def_readwrite("max_distance_between_queries", &OrbLoopDetector::Parameters::max_distance_between_queries);
 
   py::class_<DetectionResult>(m, "DetectionResult")
     .def(py::init<>())

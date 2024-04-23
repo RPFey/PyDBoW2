@@ -50,7 +50,6 @@ namespace DLoopDetector
 {
 }
 
-#include "DBoW2/DBoW2.h"
 #include "TemplatedLoopDetector.h"
 #include "DBoW2/FORB.h"
 #include "DBoW2/FBrief.h"

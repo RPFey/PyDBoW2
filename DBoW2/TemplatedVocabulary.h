@@ -31,7 +31,7 @@
 #include "BowVector.h"
 #include "ScoringObject.h"
 
-#include "../DUtils/Random.h"
+#include "DUtils/Random.h"
 
 using namespace std;
 
@@ -1395,12 +1395,12 @@ bool TemplatedVocabulary<TDescriptor,F>::loadFromTextFile(const std::string &fil
         ssnode >> nIsLeaf;
 
         stringstream ssd;
-        for(int iD=0;iD<F::L;iD++)
+        for(int iD=0; iD<F::L; iD++)
         {
             string sElement;
             ssnode >> sElement;
             ssd << sElement << " ";
-	}
+	      }
         F::fromString(m_nodes[nid].descriptor, ssd.str());
 
         ssnode >> m_nodes[nid].weight;
@@ -1591,12 +1591,15 @@ void TemplatedVocabulary<TDescriptor,F>::load(const cv::FileStorage &fs,
   m_nodes.resize(fn.size() + 1); // +1 to include root
   m_nodes[0].id = 0;
 
-  for(unsigned int i = 0; i < fn.size(); ++i)
+//   for(unsigned int i = 0; i < fn.size(); ++i)
+  cv::FileNodeIterator end = fn.end();
+  for (cv::FileNodeIterator it = fn.begin(); it != end; ++ it)
   {
-    NodeId nid = (int)fn[i]["nodeId"];
-    NodeId pid = (int)fn[i]["parentId"];
-    WordValue weight = (WordValue)fn[i]["weight"];
-    string d = (string)fn[i]["descriptor"];
+    const auto& fn_i = *it;
+    NodeId nid = (int)fn_i["nodeId"];
+    NodeId pid = (int)fn_i["parentId"];
+    WordValue weight = (WordValue)fn_i["weight"];
+    std::string d = (std::string)fn_i["descriptor"];
     
     m_nodes[nid].id = nid;
     m_nodes[nid].parent = pid;
@@ -1611,10 +1614,13 @@ void TemplatedVocabulary<TDescriptor,F>::load(const cv::FileStorage &fs,
   
   m_words.resize(fn.size());
 
-  for(unsigned int i = 0; i < fn.size(); ++i)
+//   for(unsigned int i = 0; i < fn.size(); ++i)
+  end = fn.end();
+  for (cv::FileNodeIterator it = fn.begin(); it != end; ++ it)
   {
-    NodeId wid = (int)fn[i]["wordId"];
-    NodeId nid = (int)fn[i]["nodeId"];
+    const auto& fn_i = *it;
+    NodeId wid = (int)fn_i["wordId"];
+    NodeId nid = (int)fn_i["nodeId"];
     
     m_nodes[nid].word_id = wid;
     m_words[wid] = &m_nodes[nid];
