@@ -8,7 +8,7 @@ This a python binding for the DBoW2 implementation in ORB-SLAM2. I use their ori
 
 1. Run `git submodule init && git submodule update` to clone the pybind11 and DLib into current repo.
 
-2. This repo needs OpenCV. Set `export OpenCV_DIR=/path/to/opencv/cmakeconfig`. This path could be the `build` folder of the opencv.
+2. This repo needs OpenCV. Set `export OpenCV_DIR=/path/to/opencv/cmake/config`. This path could be the `build` folder of the opencv.
 
 3. Build DLib repo. 
 
@@ -18,6 +18,16 @@ mkdir build && cd build && cmake .. && make
 ```
 
 4. run `python setup.py build_ext --inplace`. You can find examples in `test.py`.
+
+### Build Issues
+
+If you cannot compile DLib, one problem I find is that the include files is not correct for `BRIEF256.h` file. Add these lines in  `BRIEF256.h`
+
+```cpp
+#include <DUtils/DUtils.h>
+#include <opencv2/core/core.hpp>
+#include <opencv2/imgproc.hpp>
+```
 
 ## TODO
 

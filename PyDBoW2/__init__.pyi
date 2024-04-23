@@ -116,7 +116,8 @@ class LoopDetectorDetectionStatus:
     LOOP_DETECTED = None
     CLOSE_MATCHES_ONLY = None
 
-class LoopDetectorResult:
+class DetectionResult:
+    status: LoopDetectorDetectionStatus
     query: int
     match: int
 
