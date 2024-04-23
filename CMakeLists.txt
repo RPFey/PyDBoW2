@@ -3,8 +3,8 @@ project(_C)
 
 add_subdirectory(thirdparty/pybind11)
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  -Wall  -O3 -march=native ")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall  -O3 -march=native")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  -Wall  -O0 -march=native ")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall  -O0 -march=native")
 
 set(HDRS_DBOW2
   DBoW2/BowVector.h
@@ -30,12 +30,19 @@ set(SRCS_DUTILS
   DUtils/Timestamp.cpp)
 
 # Find OpenCV Package
-set(OpenCV_DIR "/home/wen/Projects/pyDBoW3/install/opencv3/build")
 find_package(OpenCV REQUIRED)
-include_directories(${OpenCV_INCLUDE_DIRS})
+include_directories(
+  ${OpenCV_INCLUDE_DIRS}
+  ${PROJECT_SOURCE_DIR}
+  ${PROJECT_SOURCE_DIR}/thirdparty/DLib/include
+)
+
+link_directories(
+  ${PROJECT_SOURCE_DIR}/thirdparty/DLib/build
+)
 
 pybind11_add_module(${PROJECT_NAME} ${SRCS_DBOW2} ${SRCS_DUTILS})
-target_link_libraries(${PROJECT_NAME} PRIVATE ${OpenCV_LIBS})
+target_link_libraries(${PROJECT_NAME} PRIVATE ${OpenCV_LIBS} DLib )
 target_include_directories(${PROJECT_NAME} PRIVATE ${OpenCV_INCLUDE_DIRS})
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 11)
 

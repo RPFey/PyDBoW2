@@ -4,7 +4,20 @@ This a python binding for the DBoW2 implementation in ORB-SLAM2. I use their ori
 
 ## Installation
 
-Clone the repo and run `python setup.py build_ext --inplace`. You can find examples in `test.py`.
+### Requirements
+
+1. Run `git submodule init && git submodule update` to clone the pybind11 and DLib into current repo.
+
+2. This repo needs OpenCV. Set `export OpenCV_DIR=/path/to/opencv/cmakeconfig`. This path could be the `build` folder of the opencv.
+
+3. Build DLib repo. 
+
+```bash
+cd thirdparty/DLib
+mkdir build && cd build && cmake .. && make
+```
+
+4. run `python setup.py build_ext --inplace`. You can find examples in `test.py`.
 
 ## TODO
 

@@ -47,3 +47,44 @@ class OrbVocabulary:
     def score(self, v1: BowVector, v2: BowVector) -> float: 
         """ Compute the score between two vectors."""
         pass
+
+class LoopDetectorParam:
+    height: int
+    width: int
+    frequency: float
+    nss: bool
+    alpha: float
+    k: int
+    dilevels: int
+    max_neighbor_ratio: float
+
+    def __init__(self) -> None:
+        pass
+
+    def __init__(self, height:int, width:int, frequency: float, 
+                        nss: bool, _alpha: float, _k: int, GeometricalCheck, dilevels: int):
+        pass
+
+class LoopDetectorGeometricalCheck:
+    GEOM_EXHAUSTIVE = None
+    GEOM_FLANN = None
+    GEOM_DI = None
+    GEOM_NONE = None
+
+class LoopDetectorDetectionStatus:
+    LOOP_DETECTED = None
+    CLOSE_MATCHES_ONLY = None
+
+class LoopDetectorResult:
+    query: int
+    match: int
+
+    def detection():
+        pass
+
+class OrbLoopDetector:
+    def __init__(self, voc:OrbVocabulary, param:LoopDetectorParam) -> None: ...
+    
+    def detectLoop(self, keypoints:List[KeyPoint], descriptor:np.ndarray, image_id:int): 
+        """ Detect loop closure."""
+        pass

@@ -1,4 +1,5 @@
 #include "DBoW2/TemplatedVocabulary.h"
+#include "DLoopDetector/TemplatedLoopDetector.h"
 #include "DBoW2/FORB.h"
 #include "DBoW2/BowVector.h"
 #include "DBoW2/FeatureVector.h"
@@ -11,8 +12,10 @@
 
 namespace py = pybind11;
 using namespace DBoW2;
+using namespace DLoopDetector;
 
 typedef TemplatedVocabulary<FORB::TDescriptor, FORB> OrbVocabulary;
+typedef TemplatedLoopDetector<FORB::TDescriptor, FORB> OrbLoopDetector;
 
 PYBIND11_MAKE_OPAQUE(BowVector);
 PYBIND11_MAKE_OPAQUE(FeatureVector);
@@ -191,7 +194,7 @@ PYBIND11_MODULE(_C, m) {
             }
 
             orb.transform(features, v, fv, levelsup);
-      });
+      }, py::call_guard<py::gil_scoped_release>());
 
 
     py::class_<BowVector>(m, "BowVector")
@@ -218,7 +221,76 @@ PYBIND11_MODULE(_C, m) {
           return keys;
       });
 
-    
+  py::enum_<DLoopDetector::GeometricalCheck>(m, "LoopDetectorGeometricalCheck")
+    .value("GEOM_EXHAUSTIVE", DLoopDetector::GeometricalCheck::GEOM_EXHAUSTIVE)
+    .value("GEOM_DI", DLoopDetector::GeometricalCheck::GEOM_DI)
+    .value("GEOM_FLANN", DLoopDetector::GeometricalCheck::GEOM_FLANN)
+    .value("GEOM_NONE", DLoopDetector::GeometricalCheck::GEOM_NONE)
+    .export_values();
+
+  py::enum_<DLoopDetector::DetectionStatus>(m, "LoopDetectorDetectionStatus")
+    .value("LOOP_DETECTED", DLoopDetector::DetectionStatus::LOOP_DETECTED)
+    .value("CLOSE_MATCHES_ONLY", DLoopDetector::DetectionStatus::CLOSE_MATCHES_ONLY)
+    .value("NO_DB_RESULTS", DLoopDetector::DetectionStatus::NO_DB_RESULTS)
+    .value("LOW_NSS_FACTOR", DLoopDetector::DetectionStatus::LOW_NSS_FACTOR)
+    .value("LOW_SCORES", DLoopDetector::DetectionStatus::LOW_SCORES)
+    .value("NO_GROUPS", DLoopDetector::DetectionStatus::NO_GROUPS)
+    .value("NO_TEMPORAL_CONSISTENCY", DLoopDetector::DetectionStatus::NO_TEMPORAL_CONSISTENCY)
+    .value("NO_GEOMETRICAL_CONSISTENCY", DLoopDetector::DetectionStatus::NO_GEOMETRICAL_CONSISTENCY)
+    .export_values();
+
+  py::class_<OrbLoopDetector::Parameters>(m, "LoopDetectorParam")
+    .def(py::init<>())
+    .def(py::init<int, int, float, bool, float, int, GeometricalCheck, int>()) 
+    .def_readwrite("image_rows", &OrbLoopDetector::Parameters::image_rows)
+    .def_readwrite("image_cols", &OrbLoopDetector::Parameters::image_cols)
+    .def_readwrite("use_nss", &OrbLoopDetector::Parameters::use_nss)
+    .def_readwrite("alpha", &OrbLoopDetector::Parameters::alpha)
+    .def_readwrite("k", &OrbLoopDetector::Parameters::k)
+    .def_readwrite("geom_check", &OrbLoopDetector::Parameters::geom_check)
+    .def_readwrite("max_neighbor_ratio", &OrbLoopDetector::Parameters::max_neighbor_ratio);
+
+  py::class_<DetectionResult>(m, "DetectionResult")
+    .def(py::init<>())
+    .def("detected", &DetectionResult::detection)
+    .def_readwrite("status", &DetectionResult::status)
+    .def_readwrite("query", &DetectionResult::query)
+    .def_readwrite("match", &DetectionResult::match);
+
+  py::class_<OrbLoopDetector>(m, "OrbLoopDetector")
+    .def(py::init<OrbVocabulary&, const OrbLoopDetector::Parameters&>())
+    .def("detectLoop", [](OrbLoopDetector& loop_detector, 
+                         std::vector<cv::KeyPoint>& keypoints,
+                         py::array_t<unsigned char, py::array::c_style | py::array::forcecast> py_feat, 
+                         int image_id){
+      // convert to cv::Mat
+      std::vector<FORB::TDescriptor> features;
+
+      // check C contiguous of py_feat
+      py::buffer_info info = py_feat.request();
+      if (info.ndim != 2)
+        throw std::runtime_error("Number of dimensions must be two");
+
+      int num_desc = info.shape[0];
+      int feat_dim = info.shape[1];
+      features.reserve(num_desc);
+
+      if(info.strides[1] != 1)
+        throw std::runtime_error("Second dimension must be contiguous");
+
+      unsigned char *data_ptr = static_cast<unsigned char *>(info.ptr);
+
+      for(int i = 0; i < num_desc; i++){
+        features.push_back(cv::Mat(1, feat_dim, CV_8U, data_ptr + i*feat_dim));
+      }
+
+      std::vector<cv::KeyPoint> old_keypoints;
+      std::vector<cv::KeyPoint> cur_keypoints;
+      DetectionResult result;
+      loop_detector.detectLoop(keypoints, features, result, &old_keypoints, &cur_keypoints);
+      return py::make_tuple(result, old_keypoints, cur_keypoints);
+    }, py::return_value_policy::take_ownership);
+
     py::bind_vector<std::vector<unsigned int>>(m, "VectorUInt");
     py::bind_vector<std::vector<cv::KeyPoint>>(m, "VectorKeypoint");
 }
